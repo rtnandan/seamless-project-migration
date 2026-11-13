@@ -1,6 +1,7 @@
 // Server-only: sends one email from any sending account (Gmail connection or mailbox sign-in).
 import type { Database } from "@/integrations/supabase/types";
-import { buildMimeMessage } from "./mime";
+import { buildMimeMessage, type MimeAttachment } from "./mime";
+import { hasFormatting, toHtml, toPlainText } from "./rich-text";
 
 export type SendingAccount = Database["public"]["Tables"]["sending_accounts"]["Row"];
 
@@ -14,6 +15,8 @@ export type OutgoingEmail = {
   references?: string[] | undefined;
   /** Conversation id already used for this thread, if any. */
   threadKey?: string | null | undefined;
+  /** Files to attach (already loaded from storage). */
+  attachments?: MimeAttachment[] | undefined;
 };
 
 export type SentResult = { rfcMessageId: string; providerMessageId: string; threadKey: string };
@@ -31,7 +34,10 @@ export async function sendFromAccount(account: SendingAccount, email: OutgoingEm
     to: email.to,
     cc: email.cc,
     subject: email.subject,
-    body: email.body,
+    // The body may hold [label](url) links and **bold**: send plain text plus an HTML version.
+    body: toPlainText(email.body),
+    html: hasFormatting(email.body) ? toHtml(email.body) : undefined,
+    attachments: email.attachments,
     messageId: rfcMessageId,
     inReplyTo: email.inReplyTo,
     references: email.references,
