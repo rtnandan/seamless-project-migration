@@ -1,8 +1,11 @@
-- [x] Move app code, database structure, privacy rules, Gmail and schedules into this project.
-- [x] Verify tests, sign-in, main screens, unsubscribe, and account privacy.
+# Roadmap
+- [x] Move app code, database, privacy rules and schedules into this project.
 - [ ] Import existing records and users (waiting on exports from the original app).
-- [x] Add any mailbox (Zoho, GoDaddy, Gmail, Outlook, other) as a sending account, with SPF/DKIM/DMARC checks.
-- [x] Inbox with one-to-one and bulk replies, showing the campaign.
-- [x] Sent page, follow-up sequences, and email verification before sending.
+- [ ] Connect Gmail (user skipped the connect card).
+- [ ] Sidebar: Dashboard, Campaigns, Automations, Unified Inbox, Contacts & Leads, Templates, AI Copilot, Email Accounts, Settings.
+- [ ] Per-mailbox signatures with links, used for campaigns and inbox replies.
+- [ ] Attachments (files/PDFs and links) on campaigns and inbox replies.
+- [ ] Sequences up to 8 steps (presets 3/5/7/13/21 + custom), stop on reply/bounce/unsubscribe, behaviour rules, auto-close after inactivity.
+- [ ] AI Copilot: personal lines ({{ai_line}}) in batches, email copy writer.
+- [ ] Leads: bulk verification, tags, AI lines. Templates page. Settings page (sending window, auto-close).
 - [ ] Publish so the scheduled jobs and unsubscribe links run on the live address.
-- [ ] Switch users over from runmeth.lovable.app after data import.
