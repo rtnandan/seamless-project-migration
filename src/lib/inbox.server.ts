@@ -1,6 +1,6 @@
 // Server-only: answers a conversation from the account it came in on, keeping it in the same thread.
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Database } from "@/integrations/supabase/types";
+import type { Database, Json } from "@/integrations/supabase/types";
 import { renderTemplate } from "./email-utils";
 import { sendFromAccount } from "./mailer.server";
 import { replySubject } from "./mime";
@@ -66,7 +66,7 @@ export async function sendThreadReply(
       status: "pending",
       in_reply_to: inReplyTo,
       gmail_thread_id: input.threadId,
-      attachments: attachments as unknown as Database["public"]["Tables"]["email_messages"]["Insert"]["attachments"],
+      attachments: attachments as unknown as Json,
     })
     .select("id")
     .single();

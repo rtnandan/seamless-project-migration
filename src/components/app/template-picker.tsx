@@ -1,5 +1,4 @@
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
 import { LayoutTemplate } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -29,7 +28,7 @@ export function TemplatePicker({
       <PopoverContent align="start" className="w-72 p-1">
         {list.length === 0 ? (
           <div className="p-3 text-sm text-muted-foreground">
-            No templates yet. <Link to="/templates" className="underline">Create one</Link>.
+            No saved templates yet.
           </div>
         ) : (
           <ul className="max-h-72 overflow-auto">
