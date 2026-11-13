@@ -10,33 +10,247 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AuthenticatedAccountsRouteImport } from './routes/_authenticated/accounts'
+import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedInboxRouteImport } from './routes/_authenticated/inbox'
+import { Route as AuthenticatedRepliesRouteImport } from './routes/_authenticated/replies'
+import { Route as AuthenticatedSentRouteImport } from './routes/_authenticated/sent'
+import { Route as AuthenticatedSuppressionRouteImport } from './routes/_authenticated/suppression'
+import { Route as UnsubscribeTokenRouteImport } from './routes/unsubscribe.$token'
+import { Route as AuthenticatedCampaignsIndexRouteImport } from './routes/_authenticated/campaigns/index'
+import { Route as AuthenticatedCampaignsCampaignIdRouteImport } from './routes/_authenticated/campaigns/$campaignId'
+import { Route as AuthenticatedLeadsIndexRouteImport } from './routes/_authenticated/leads/index'
+import { Route as AuthenticatedLeadsLeadIdRouteImport } from './routes/_authenticated/leads/$leadId'
+import { Route as AuthenticatedLeadsImportRouteImport } from './routes/_authenticated/leads/import'
+import { Route as ApiPublicUnsubscribeRouteImport } from './routes/api/public/unsubscribe'
+import { Route as ApiPublicJobsCheckInboxRouteImport } from './routes/api/public/jobs/check-inbox'
+import { Route as ApiPublicJobsSendBatchRouteImport } from './routes/api/public/jobs/send-batch'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedAccountsRoute = AuthenticatedAccountsRouteImport.update({
+  id: '/accounts',
+  path: '/accounts',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedInboxRoute = AuthenticatedInboxRouteImport.update({
+  id: '/inbox',
+  path: '/inbox',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedRepliesRoute = AuthenticatedRepliesRouteImport.update({
+  id: '/replies',
+  path: '/replies',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedSentRoute = AuthenticatedSentRouteImport.update({
+  id: '/sent',
+  path: '/sent',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedSuppressionRoute =
+  AuthenticatedSuppressionRouteImport.update({
+    id: '/suppression',
+    path: '/suppression',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const UnsubscribeTokenRoute = UnsubscribeTokenRouteImport.update({
+  id: '/unsubscribe/$token',
+  path: '/unsubscribe/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedCampaignsIndexRoute =
+  AuthenticatedCampaignsIndexRouteImport.update({
+    id: '/campaigns/',
+    path: '/campaigns/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedCampaignsCampaignIdRoute =
+  AuthenticatedCampaignsCampaignIdRouteImport.update({
+    id: '/campaigns/$campaignId',
+    path: '/campaigns/$campaignId',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedLeadsIndexRoute = AuthenticatedLeadsIndexRouteImport.update({
+  id: '/leads/',
+  path: '/leads/',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedLeadsLeadIdRoute =
+  AuthenticatedLeadsLeadIdRouteImport.update({
+    id: '/leads/$leadId',
+    path: '/leads/$leadId',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedLeadsImportRoute =
+  AuthenticatedLeadsImportRouteImport.update({
+    id: '/leads/import',
+    path: '/leads/import',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const ApiPublicUnsubscribeRoute = ApiPublicUnsubscribeRouteImport.update({
+  id: '/api/public/unsubscribe',
+  path: '/api/public/unsubscribe',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicJobsCheckInboxRoute = ApiPublicJobsCheckInboxRouteImport.update({
+  id: '/api/public/jobs/check-inbox',
+  path: '/api/public/jobs/check-inbox',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicJobsSendBatchRoute = ApiPublicJobsSendBatchRouteImport.update({
+  id: '/api/public/jobs/send-batch',
+  path: '/api/public/jobs/send-batch',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/accounts': typeof AuthenticatedAccountsRoute
+  '/dashboard': typeof AuthenticatedDashboardRoute
+  '/inbox': typeof AuthenticatedInboxRoute
+  '/replies': typeof AuthenticatedRepliesRoute
+  '/sent': typeof AuthenticatedSentRoute
+  '/suppression': typeof AuthenticatedSuppressionRoute
+  '/unsubscribe/$token': typeof UnsubscribeTokenRoute
+  '/campaigns/$campaignId': typeof AuthenticatedCampaignsCampaignIdRoute
+  '/leads/$leadId': typeof AuthenticatedLeadsLeadIdRoute
+  '/leads/import': typeof AuthenticatedLeadsImportRoute
+  '/api/public/unsubscribe': typeof ApiPublicUnsubscribeRoute
+  '/campaigns/': typeof AuthenticatedCampaignsIndexRoute
+  '/leads/': typeof AuthenticatedLeadsIndexRoute
+  '/api/public/jobs/check-inbox': typeof ApiPublicJobsCheckInboxRoute
+  '/api/public/jobs/send-batch': typeof ApiPublicJobsSendBatchRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/accounts': typeof AuthenticatedAccountsRoute
+  '/dashboard': typeof AuthenticatedDashboardRoute
+  '/inbox': typeof AuthenticatedInboxRoute
+  '/replies': typeof AuthenticatedRepliesRoute
+  '/sent': typeof AuthenticatedSentRoute
+  '/suppression': typeof AuthenticatedSuppressionRoute
+  '/unsubscribe/$token': typeof UnsubscribeTokenRoute
+  '/campaigns/$campaignId': typeof AuthenticatedCampaignsCampaignIdRoute
+  '/leads/$leadId': typeof AuthenticatedLeadsLeadIdRoute
+  '/leads/import': typeof AuthenticatedLeadsImportRoute
+  '/api/public/unsubscribe': typeof ApiPublicUnsubscribeRoute
+  '/campaigns': typeof AuthenticatedCampaignsIndexRoute
+  '/leads': typeof AuthenticatedLeadsIndexRoute
+  '/api/public/jobs/check-inbox': typeof ApiPublicJobsCheckInboxRoute
+  '/api/public/jobs/send-batch': typeof ApiPublicJobsSendBatchRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/auth': typeof AuthRoute
+  '/_authenticated/accounts': typeof AuthenticatedAccountsRoute
+  '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/inbox': typeof AuthenticatedInboxRoute
+  '/_authenticated/replies': typeof AuthenticatedRepliesRoute
+  '/_authenticated/sent': typeof AuthenticatedSentRoute
+  '/_authenticated/suppression': typeof AuthenticatedSuppressionRoute
+  '/unsubscribe/$token': typeof UnsubscribeTokenRoute
+  '/_authenticated/campaigns/$campaignId': typeof AuthenticatedCampaignsCampaignIdRoute
+  '/_authenticated/leads/$leadId': typeof AuthenticatedLeadsLeadIdRoute
+  '/_authenticated/leads/import': typeof AuthenticatedLeadsImportRoute
+  '/api/public/unsubscribe': typeof ApiPublicUnsubscribeRoute
+  '/_authenticated/campaigns/': typeof AuthenticatedCampaignsIndexRoute
+  '/_authenticated/leads/': typeof AuthenticatedLeadsIndexRoute
+  '/api/public/jobs/check-inbox': typeof ApiPublicJobsCheckInboxRoute
+  '/api/public/jobs/send-batch': typeof ApiPublicJobsSendBatchRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/accounts'
+    | '/dashboard'
+    | '/inbox'
+    | '/replies'
+    | '/sent'
+    | '/suppression'
+    | '/unsubscribe/$token'
+    | '/campaigns/$campaignId'
+    | '/leads/$leadId'
+    | '/leads/import'
+    | '/api/public/unsubscribe'
+    | '/campaigns/'
+    | '/leads/'
+    | '/api/public/jobs/check-inbox'
+    | '/api/public/jobs/send-batch'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/auth'
+    | '/accounts'
+    | '/dashboard'
+    | '/inbox'
+    | '/replies'
+    | '/sent'
+    | '/suppression'
+    | '/unsubscribe/$token'
+    | '/campaigns/$campaignId'
+    | '/leads/$leadId'
+    | '/leads/import'
+    | '/api/public/unsubscribe'
+    | '/campaigns'
+    | '/leads'
+    | '/api/public/jobs/check-inbox'
+    | '/api/public/jobs/send-batch'
+  id:
+    | '__root__'
+    | '/'
+    | '/_authenticated'
+    | '/auth'
+    | '/_authenticated/accounts'
+    | '/_authenticated/dashboard'
+    | '/_authenticated/inbox'
+    | '/_authenticated/replies'
+    | '/_authenticated/sent'
+    | '/_authenticated/suppression'
+    | '/unsubscribe/$token'
+    | '/_authenticated/campaigns/$campaignId'
+    | '/_authenticated/leads/$leadId'
+    | '/_authenticated/leads/import'
+    | '/api/public/unsubscribe'
+    | '/_authenticated/campaigns/'
+    | '/_authenticated/leads/'
+    | '/api/public/jobs/check-inbox'
+    | '/api/public/jobs/send-batch'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  AuthRoute: typeof AuthRoute
+  UnsubscribeTokenRoute: typeof UnsubscribeTokenRoute
+  ApiPublicUnsubscribeRoute: typeof ApiPublicUnsubscribeRoute
+  ApiPublicJobsCheckInboxRoute: typeof ApiPublicJobsCheckInboxRoute
+  ApiPublicJobsSendBatchRoute: typeof ApiPublicJobsSendBatchRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +262,167 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/accounts': {
+      id: '/_authenticated/accounts'
+      path: '/accounts'
+      fullPath: '/accounts'
+      preLoaderRoute: typeof AuthenticatedAccountsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/dashboard': {
+      id: '/_authenticated/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof AuthenticatedDashboardRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/inbox': {
+      id: '/_authenticated/inbox'
+      path: '/inbox'
+      fullPath: '/inbox'
+      preLoaderRoute: typeof AuthenticatedInboxRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/replies': {
+      id: '/_authenticated/replies'
+      path: '/replies'
+      fullPath: '/replies'
+      preLoaderRoute: typeof AuthenticatedRepliesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/sent': {
+      id: '/_authenticated/sent'
+      path: '/sent'
+      fullPath: '/sent'
+      preLoaderRoute: typeof AuthenticatedSentRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/suppression': {
+      id: '/_authenticated/suppression'
+      path: '/suppression'
+      fullPath: '/suppression'
+      preLoaderRoute: typeof AuthenticatedSuppressionRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/unsubscribe/$token': {
+      id: '/unsubscribe/$token'
+      path: '/unsubscribe/$token'
+      fullPath: '/unsubscribe/$token'
+      preLoaderRoute: typeof UnsubscribeTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/campaigns/': {
+      id: '/_authenticated/campaigns/'
+      path: '/campaigns'
+      fullPath: '/campaigns/'
+      preLoaderRoute: typeof AuthenticatedCampaignsIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/campaigns/$campaignId': {
+      id: '/_authenticated/campaigns/$campaignId'
+      path: '/campaigns/$campaignId'
+      fullPath: '/campaigns/$campaignId'
+      preLoaderRoute: typeof AuthenticatedCampaignsCampaignIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/leads/': {
+      id: '/_authenticated/leads/'
+      path: '/leads'
+      fullPath: '/leads/'
+      preLoaderRoute: typeof AuthenticatedLeadsIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/leads/$leadId': {
+      id: '/_authenticated/leads/$leadId'
+      path: '/leads/$leadId'
+      fullPath: '/leads/$leadId'
+      preLoaderRoute: typeof AuthenticatedLeadsLeadIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/leads/import': {
+      id: '/_authenticated/leads/import'
+      path: '/leads/import'
+      fullPath: '/leads/import'
+      preLoaderRoute: typeof AuthenticatedLeadsImportRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/api/public/unsubscribe': {
+      id: '/api/public/unsubscribe'
+      path: '/api/public/unsubscribe'
+      fullPath: '/api/public/unsubscribe'
+      preLoaderRoute: typeof ApiPublicUnsubscribeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/jobs/check-inbox': {
+      id: '/api/public/jobs/check-inbox'
+      path: '/api/public/jobs/check-inbox'
+      fullPath: '/api/public/jobs/check-inbox'
+      preLoaderRoute: typeof ApiPublicJobsCheckInboxRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/jobs/send-batch': {
+      id: '/api/public/jobs/send-batch'
+      path: '/api/public/jobs/send-batch'
+      fullPath: '/api/public/jobs/send-batch'
+      preLoaderRoute: typeof ApiPublicJobsSendBatchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
+interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAccountsRoute: typeof AuthenticatedAccountsRoute
+  AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedInboxRoute: typeof AuthenticatedInboxRoute
+  AuthenticatedRepliesRoute: typeof AuthenticatedRepliesRoute
+  AuthenticatedSentRoute: typeof AuthenticatedSentRoute
+  AuthenticatedSuppressionRoute: typeof AuthenticatedSuppressionRoute
+  AuthenticatedCampaignsCampaignIdRoute: typeof AuthenticatedCampaignsCampaignIdRoute
+  AuthenticatedLeadsLeadIdRoute: typeof AuthenticatedLeadsLeadIdRoute
+  AuthenticatedLeadsImportRoute: typeof AuthenticatedLeadsImportRoute
+  AuthenticatedCampaignsIndexRoute: typeof AuthenticatedCampaignsIndexRoute
+  AuthenticatedLeadsIndexRoute: typeof AuthenticatedLeadsIndexRoute
+}
+
+const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAccountsRoute: AuthenticatedAccountsRoute,
+  AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedInboxRoute: AuthenticatedInboxRoute,
+  AuthenticatedRepliesRoute: AuthenticatedRepliesRoute,
+  AuthenticatedSentRoute: AuthenticatedSentRoute,
+  AuthenticatedSuppressionRoute: AuthenticatedSuppressionRoute,
+  AuthenticatedCampaignsCampaignIdRoute: AuthenticatedCampaignsCampaignIdRoute,
+  AuthenticatedLeadsLeadIdRoute: AuthenticatedLeadsLeadIdRoute,
+  AuthenticatedLeadsImportRoute: AuthenticatedLeadsImportRoute,
+  AuthenticatedCampaignsIndexRoute: AuthenticatedCampaignsIndexRoute,
+  AuthenticatedLeadsIndexRoute: AuthenticatedLeadsIndexRoute,
+}
+
+const AuthenticatedRouteRouteWithChildren =
+  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  AuthRoute: AuthRoute,
+  UnsubscribeTokenRoute: UnsubscribeTokenRoute,
+  ApiPublicUnsubscribeRoute: ApiPublicUnsubscribeRoute,
+  ApiPublicJobsCheckInboxRoute: ApiPublicJobsCheckInboxRoute,
+  ApiPublicJobsSendBatchRoute: ApiPublicJobsSendBatchRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
