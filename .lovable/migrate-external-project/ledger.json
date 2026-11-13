@@ -1,10 +1,68 @@
-{"source":"code archive: decilemeth-main.zip (DECILE Outreach, TanStack Start)","capabilities":[
-{"capability":"application code and routes","source":"src/","outcome":"migrate","status":"in_progress","next_action":"copy"},
-{"capability":"database schema","source":"3 drizzle migrations","outcome":"migrate","status":"in_progress","next_action":"apply"},
-{"capability":"records","source":"not in archive","outcome":"migrate","status":"pending","next_action":"user exports CSV/JSON"},
-{"capability":"auth identities","source":"previous Cloud users, no export","outcome":"migrate","status":"pending","next_action":"user export"},
-{"capability":"authorization","source":"owner-only RLS","outcome":"migrate","status":"in_progress","next_action":"apply"},
-{"capability":"uploaded file bytes","source":"attachments bucket","outcome":"migrate","status":"pending","next_action":"files not in archive"},
-{"capability":"Gmail connector, SMTP/IMAP, Lovable AI","source":"code","outcome":"preserve","status":"in_progress","next_action":"connect Gmail, set MAIL_CREDENTIALS_KEY"},
-{"capability":"public endpoints/schedules","source":"unsubscribe, send-batch (1m), check-inbox (10m)","outcome":"preserve","status":"in_progress","next_action":"create schedules"},
-{"capability":"cutover","source":"old app","outcome":"pending","status":"pending","next_action":"publish"}]}
+{
+ "source": "code archive: decilemeth-main.zip (DECILE Outreach, TanStack Start)",
+ "capabilities": [
+  {
+   "capability": "application code and routes",
+   "source": "src/",
+   "outcome": "migrate",
+   "status": "verified",
+   "next_action": "none"
+  },
+  {
+   "capability": "database schema",
+   "source": "3 drizzle migrations",
+   "outcome": "migrate",
+   "status": "verified",
+   "next_action": "none"
+  },
+  {
+   "capability": "records",
+   "source": "not in archive",
+   "outcome": "migrate",
+   "status": "pending",
+   "next_action": "user exports CSV/JSON"
+  },
+  {
+   "capability": "auth identities",
+   "source": "previous Cloud users, no export",
+   "outcome": "migrate",
+   "status": "pending",
+   "next_action": "user export"
+  },
+  {
+   "capability": "authorization",
+   "source": "owner-only RLS",
+   "outcome": "migrate",
+   "status": "verified",
+   "next_action": "none"
+  },
+  {
+   "capability": "uploaded file bytes",
+   "source": "attachments bucket",
+   "outcome": "migrate",
+   "status": "pending",
+   "next_action": "files not in archive"
+  },
+  {
+   "capability": "Gmail connector, SMTP/IMAP, Lovable AI",
+   "source": "code",
+   "outcome": "preserve",
+   "status": "partial",
+   "next_action": "Gmail connection skipped by user; SMTP/IMAP mailboxes ready, key generated"
+  },
+  {
+   "capability": "public endpoints/schedules",
+   "source": "unsubscribe, send-batch (1m), check-inbox (10m)",
+   "outcome": "preserve",
+   "status": "implemented",
+   "next_action": "publish"
+  },
+  {
+   "capability": "cutover",
+   "source": "old app",
+   "outcome": "pending",
+   "status": "pending",
+   "next_action": "publish"
+  }
+ ]
+}
