@@ -28,3 +28,9 @@ use the editor.
   own key and store it in Secrets.
 - **Secrets.** Lovable manages them. Do not put secret values in the repo.
 <!-- LOVABLE:END -->
+
+## Application structure
+- Keep outreach screens in TanStack file routes, shared outreach UI in `src/components/app`, and email/data workflows in client-safe, server-only (`*.server.ts`), or `*.functions.ts` modules; this keeps Gmail/AI credentials server-side.
+- Scheduled jobs are authenticated `/api/public/jobs/*` routes using `authenticateCronRequest`; keep their paths stable because managed schedules call them.
+- Sending accounts are provider-neutral: Gmail connector accounts use the Gmail API, every other mailbox uses SMTP to send and read-only IMAP for replies/bounces via `mailer.server.ts`; servers are auto-detected from the address's MX records in pure `mailbox-detect.ts` so the connect form only asks for email and password; mailbox passwords are AES-GCM encrypted with `MAIL_CREDENTIALS_KEY` in the service-role-only `account_credentials` table so the browser never sees them.
+- Follow-ups are sent by the existing send-batch job as same-thread replies (In-Reply-To/References) and stop when `campaign_leads.sequence_stopped_at` is set by a reply, bounce or unsubscribe; keep follow-up timing logic in pure `followups.ts` so it stays tested.

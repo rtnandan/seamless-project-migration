@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1794580433463,
+      "tag": "0000_outreach_schema",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1794580450929,
+      "tag": "0001_multi_provider_inbox_followups",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1794580494107,
+      "tag": "0002_signatures_attachments_sequences_templates",
+      "breakpoints": true
+    }
+  ]
+}
