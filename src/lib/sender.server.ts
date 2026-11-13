@@ -1,7 +1,7 @@
 // Server-only sending engine. Used by the scheduled job (all owners, admin client)
 // and by the "Send next batch now" button (one owner, RLS client).
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Database } from "@/integrations/supabase/types";
+import type { Database, Json } from "@/integrations/supabase/types";
 import { DO_NOT_EMAIL_STATUSES } from "./email-utils";
 import { composeEmail, pickSignature } from "./compose";
 import { parseAttachments } from "./attachments";
@@ -425,7 +425,7 @@ async function sendOne(
       subject,
       body,
       status: "pending",
-      attachments: attachments as unknown as Database["public"]["Tables"]["email_messages"]["Insert"]["attachments"],
+      attachments: attachments as unknown as Json,
     })
     .select("id")
     .single();
