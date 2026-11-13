@@ -1,4 +1,5 @@
 import { renderTemplate, type LeadLike } from "./email-utils";
+import { appendLinks, type Attachment } from "./attachments";
 
 export const DEFAULT_APP_URL = "https://decileoutreach.lovable.app";
 
@@ -16,9 +17,11 @@ export function composeEmail(opts: {
   lead: LeadLike;
   /** Adds the opt-out line (real campaign emails and tests). */
   optOut?: boolean;
+  /** Link attachments are listed under the message, above the signature. */
+  attachments?: Attachment[] | undefined;
 }) {
   const subject = renderTemplate(opts.subject, opts.lead);
-  let body = renderTemplate(opts.body, opts.lead).trimEnd();
+  let body = appendLinks(renderTemplate(opts.body, opts.lead).trimEnd(), opts.attachments ?? []);
   if (opts.signature?.trim()) body += `\n\n${renderTemplate(opts.signature, opts.lead).trim()}`;
   if (opts.optOut) body += `\n\n${OPT_OUT_LINE}`;
   return { subject, body };
@@ -52,4 +55,9 @@ export function inboxWarnings(subject: string, body: string): string[] {
   const words = body.trim().split(/\s+/).filter(Boolean).length;
   if (words > 180) w.push(`It's ${words} words. Short emails (50–150 words) look personal and land better.`);
   return w;
+}
+
+/** The mailbox's own signature wins; otherwise the default one from Settings. */
+export function pickSignature(accountSignature: string | null | undefined, defaultSignature: string | null | undefined): string {
+  return accountSignature?.trim() ? accountSignature : (defaultSignature ?? "");
 }

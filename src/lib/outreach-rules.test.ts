@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { basicEmailCheck, mailServerVerdict } from "./email-verify";
 import { evaluateDomain } from "./dns-health";
-import { nextFollowUp } from "./followups";
+import { DELAY_PRESETS, inSendingWindow, nextFollowUp, parseBehavior, parseFollowUps, replyAction } from "./followups";
 import { dotStuff, messageIdsIn } from "./mail-protocol";
 import { buildMimeMessage, replySubject } from "./mime";
 
@@ -33,11 +33,7 @@ describe("SPF / DKIM / DMARC", () => {
 });
 
 describe("follow-ups", () => {
-  const c = {
-    follow_up_1_body: "Bumping this", follow_up_1_delay_days: 3,
-    follow_up_2_body: "Last note", follow_up_2_delay_days: 4,
-    follow_up_3_body: "", follow_up_3_delay_days: 5,
-  };
+  const c = { follow_ups: [{ delay_days: 3, body: "Bumping this" }, { delay_days: 4, body: "Last note" }] };
   it("follow-up 1 is due 3 days after the first email", () => {
     const n = nextFollowUp(c, { current_step: 1, last_sent_at: "2026-11-01T10:00:00.000Z", sequence_stopped_at: null });
     expect(n?.n).toBe(1);
@@ -45,10 +41,35 @@ describe("follow-ups", () => {
   });
   it("follow-up 2 is due 4 days after follow-up 1", () =>
     expect(nextFollowUp(c, { current_step: 2, last_sent_at: "2026-11-04T10:00:00.000Z", sequence_stopped_at: null })?.dueAt.toISOString()).toBe("2026-11-08T10:00:00.000Z"));
-  it("an empty step ends the sequence", () => expect(nextFollowUp(c, { current_step: 3, last_sent_at: "2026-11-08T10:00:00.000Z", sequence_stopped_at: null })).toBeNull());
+  it("the sequence ends after the last step", () => expect(nextFollowUp(c, { current_step: 3, last_sent_at: "2026-11-08T10:00:00.000Z", sequence_stopped_at: null })).toBeNull());
   it("a reply (stopped sequence) means no more follow-ups", () =>
     expect(nextFollowUp(c, { current_step: 1, last_sent_at: "2026-11-01T10:00:00.000Z", sequence_stopped_at: "2026-11-02T10:00:00.000Z" })).toBeNull());
-  it("nothing after follow-up 3", () => expect(nextFollowUp(c, { current_step: 4, last_sent_at: "2026-11-01T10:00:00.000Z", sequence_stopped_at: null })).toBeNull());
+  it("allows up to 8 follow-ups, never more", () => {
+    const many = { follow_ups: Array.from({ length: 10 }, (_, i) => ({ delay_days: 3, body: `Step ${i + 1}` })) };
+    expect(parseFollowUps(many.follow_ups)).toHaveLength(8);
+    expect(nextFollowUp(many, { current_step: 8, last_sent_at: "2026-11-01T10:00:00.000Z", sequence_stopped_at: null })?.body).toBe("Step 8");
+    expect(nextFollowUp(many, { current_step: 9, last_sent_at: "2026-11-01T10:00:00.000Z", sequence_stopped_at: null })).toBeNull();
+  });
+  it("offers 3, 5, 7, 13 and 21 day presets", () => expect([...DELAY_PRESETS]).toEqual([3, 5, 7, 13, 21]));
+});
+
+describe("behaviour rules", () => {
+  const b = parseBehavior({});
+  it("a real reply stops the sequence", () => expect(replyAction("interested", b)).toBe("stop"));
+  it("unsubscribes and bounces always stop it", () => {
+    expect(replyAction("unsubscribe", { ...b, later_check_in: true })).toBe("stop");
+    expect(replyAction("bounce", b)).toBe("stop");
+  });
+  it("out-of-office keeps the sequence going by default", () => expect(replyAction("out_of_office", b)).toBe("continue"));
+  it("'later' replies get one check-in when turned on", () => expect(replyAction("follow_up_later", { ...b, later_check_in: true })).toBe("nurture"));
+});
+
+describe("sending window", () => {
+  const w = { send_start_hour: 9, send_end_hour: 18, send_weekdays_only: true };
+  it("sends during working hours on a weekday (India time)", () =>
+    expect(inSendingWindow(new Date("2026-11-13T05:00:00Z"), "Asia/Kolkata", w)).toBe(true)); // Fri 10:30
+  it("waits outside working hours", () => expect(inSendingWindow(new Date("2026-11-13T14:00:00Z"), "Asia/Kolkata", w)).toBe(false)); // Fri 19:30
+  it("waits at weekends", () => expect(inSendingWindow(new Date("2026-11-14T05:00:00Z"), "Asia/Kolkata", w)).toBe(false)); // Sat
 });
 
 describe("threading", () => {

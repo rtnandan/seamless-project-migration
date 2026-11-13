@@ -63,7 +63,7 @@ export const sendTestEmail = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { sendFromAccount } = await import("./mailer.server");
-    const { composeEmail } = await import("./compose");
+    const { composeEmail, pickSignature } = await import("./compose");
     const { supabase, userId } = context;
     const [{ data: campaign }, { data: account }, { data: settings }] = await Promise.all([
       supabase.from("campaigns").select("*").eq("id", data.campaignId).single(),
@@ -86,15 +86,20 @@ export const sendTestEmail = createServerFn({ method: "POST" })
       const { data: l } = await supabase.from("leads").select("*").eq("id", data.leadId).single();
       if (l) lead = l as unknown as Record<string, unknown>;
     }
+    const { parseAttachments } = await import("./attachments");
+    const { loadAttachmentFiles } = await import("./attachments.server");
+    const attachments = parseAttachments(campaign.attachments);
     const { subject, body } = composeEmail({
       subject: campaign.subject,
       body: campaign.body,
-      signature: settings?.signature,
+      signature: pickSignature(account.signature, settings?.signature),
       lead: lead as never,
       optOut: true,
+      attachments,
     });
     try {
-      const sent = await sendFromAccount(account, { to: data.to, subject: `[TEST] ${subject}`, body });
+      const files = await loadAttachmentFiles(supabase, attachments, userId);
+      const sent = await sendFromAccount(account, { to: data.to, subject: `[TEST] ${subject}`, body, attachments: files });
       await supabase.from("email_messages").insert({
         owner_id: userId,
         campaign_id: campaign.id,

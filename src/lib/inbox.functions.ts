@@ -2,6 +2,16 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
+const attachmentList = z
+  .array(
+    z.discriminatedUnion("kind", [
+      z.object({ kind: z.literal("file"), path: z.string().min(1).max(500), name: z.string().min(1).max(255), size: z.number().int().min(0), type: z.string().max(200) }),
+      z.object({ kind: z.literal("link"), url: z.string().url().max(2000).regex(/^https?:\/\//), label: z.string().max(200) }),
+    ]),
+  )
+  .max(10)
+  .default([]);
+
 const emailList = z.array(z.string().trim().toLowerCase().email().max(254)).max(10);
 
 /** Reply to one conversation (optionally copying more people). */
@@ -15,6 +25,7 @@ export const sendReply = createServerFn({ method: "POST" })
         cc: emailList.default([]),
         to: z.string().trim().toLowerCase().email().max(254).optional(),
         includeSignature: z.boolean().default(true),
+        attachments: attachmentList,
       })
       .parse(d),
   )
@@ -32,6 +43,7 @@ export const sendBulkReply = createServerFn({ method: "POST" })
         threadIds: z.array(z.string().min(1).max(500)).min(1).max(50),
         body: z.string().trim().min(1).max(20000),
         includeSignature: z.boolean().default(true),
+        attachments: attachmentList,
       })
       .parse(d),
   )
@@ -40,7 +52,7 @@ export const sendBulkReply = createServerFn({ method: "POST" })
     const results: { threadId: string; ok: boolean; error?: string }[] = [];
     for (const threadId of data.threadIds) {
       try {
-        await sendThreadReply(context.supabase, { threadId, body: data.body, cc: [], includeSignature: data.includeSignature });
+        await sendThreadReply(context.supabase, { threadId, body: data.body, cc: [], includeSignature: data.includeSignature, attachments: data.attachments });
         results.push({ threadId, ok: true });
       } catch (e) {
         results.push({ threadId, ok: false, error: (e as Error).message });

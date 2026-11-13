@@ -1,5 +1,13 @@
 // Pure MIME helpers for building outgoing emails (no server-only imports).
 
+export type MimeAttachment = { filename: string; contentType: string; bytes: Uint8Array };
+
+export function bytesToBase64(bytes: Uint8Array): string {
+  let s = "";
+  for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  return btoa(s);
+}
+
 const utf8 = (s: string) => new TextEncoder().encode(s);
 export const b64 = (s: string) => btoa(Array.from(utf8(s), (b) => String.fromCharCode(b)).join(""));
 const isAscii = (v: string) => /^[\x00-\x7F]*$/.test(v);
@@ -63,6 +71,9 @@ export function buildMimeMessage(input: {
   inReplyTo?: string | null | undefined;
   references?: string[] | undefined;
   date?: Date | undefined;
+  /** Optional HTML version (links, bold) sent alongside the plain text. */
+  html?: string | undefined;
+  attachments?: MimeAttachment[] | undefined;
 }): string {
   const name = stripNewlines(input.fromName ?? "").replace(/"/g, "");
   const from = name ? `${isAscii(name) ? `"${name}"` : encodeHeader(name)} <${input.from}>` : input.from;
@@ -75,10 +86,44 @@ export function buildMimeMessage(input: {
   if (input.inReplyTo) lines.push(`In-Reply-To: ${stripNewlines(input.inReplyTo)}`);
   const refs = (input.references ?? []).map(stripNewlines).filter(Boolean);
   if (refs.length) lines.push(`References: ${refs.join(" ")}`);
-  lines.push("MIME-Version: 1.0", 'Content-Type: text/plain; charset="UTF-8"', "Content-Transfer-Encoding: quoted-printable");
+  lines.push("MIME-Version: 1.0");
   // No List-Unsubscribe header on purpose: it marks the email as bulk mail and Gmail files it
   // under Promotions. The opt-out line in the body is handled by the inbox checker.
-  return [...lines, "", encodeQuotedPrintable(input.body)].join("\r\n");
+  const textPart = ['Content-Type: text/plain; charset="UTF-8"', "Content-Transfer-Encoding: quoted-printable", "", encodeQuotedPrintable(input.body)];
+  const files = input.attachments ?? [];
+  if (!input.html && !files.length) return [...lines, ...textPart].join("\r\n");
+  const seed = (input.messageId ?? `${input.to}${input.subject}`).replace(/[^a-zA-Z0-9]/g, "").slice(0, 24);
+  const altB = `alt_${seed}`;
+  const mixB = `mix_${seed}`;
+  const bodyPart = input.html
+    ? [
+        `Content-Type: multipart/alternative; boundary="${altB}"`,
+        "",
+        `--${altB}`,
+        ...textPart,
+        `--${altB}`,
+        'Content-Type: text/html; charset="UTF-8"',
+        "Content-Transfer-Encoding: quoted-printable",
+        "",
+        encodeQuotedPrintable(input.html),
+        `--${altB}--`,
+      ]
+    : textPart;
+  if (!files.length) return [...lines, ...bodyPart].join("\r\n");
+  const out = [...lines, `Content-Type: multipart/mixed; boundary="${mixB}"`, "", `--${mixB}`, ...bodyPart];
+  for (const f of files) {
+    const name = encodeHeader(stripNewlines(f.filename).replace(/"/g, ""));
+    out.push(
+      `--${mixB}`,
+      `Content-Type: ${stripNewlines(f.contentType) || "application/octet-stream"}; name="${name}"`,
+      "Content-Transfer-Encoding: base64",
+      `Content-Disposition: attachment; filename="${name}"`,
+      "",
+      bytesToBase64(f.bytes).replace(/.{1,76}/g, "$&\r\n").trimEnd(),
+    );
+  }
+  out.push(`--${mixB}--`);
+  return out.join("\r\n");
 }
 
 /** "Re: " once, never "Re: Re: ". */

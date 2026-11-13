@@ -3,11 +3,12 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { DO_NOT_EMAIL_STATUSES } from "./email-utils";
-import { composeEmail } from "./compose";
+import { composeEmail, pickSignature } from "./compose";
+import { parseAttachments } from "./attachments";
 import { assignAccounts, MANUAL_BATCH_SIZE, remainingAllowance, SENDS_PER_RUN, startOfDayInTimeZone } from "./sending-rules";
 import { GmailError } from "./gmail.server";
 import { sendFromAccount } from "./mailer.server";
-import { nextFollowUp } from "./followups";
+import { inSendingWindow, nextFollowUp, parseBehavior, parseFollowUps, replyAction } from "./followups";
 import { replySubject } from "./mime";
 
 type DB = SupabaseClient<Database>;
@@ -38,13 +39,23 @@ export async function runSender(db: DB, opts: { ownerId?: string; maxSends?: num
     .not("approved_at", "is", null)
     .order("started_at", { ascending: true });
   if (opts.ownerId) cq = cq.eq("owner_id", opts.ownerId);
-  const { data: campaigns, error: cErr } = await cq;
+  const { data: allCampaigns, error: cErr } = await cq;
   if (cErr) throw new Error(cErr.message);
-  if (!campaigns?.length) return result;
+  if (!allCampaigns?.length) return result;
 
-  const ownerIds = [...new Set(campaigns.map((c) => c.owner_id))];
-  const { data: settingsRows } = await db.from("app_settings").select("*").in("owner_id", ownerIds);
+  const allOwners = [...new Set(allCampaigns.map((c) => c.owner_id))];
+  const { data: settingsRows } = await db.from("app_settings").select("*").in("owner_id", allOwners);
   const settings = new Map((settingsRows ?? []).map((s) => [s.owner_id, s]));
+  // Each owner's sending hours (Settings) decide whether anything goes out right now.
+  const campaigns = allCampaigns.filter((c) => {
+    const s = settings.get(c.owner_id);
+    return !s || inSendingWindow(now, s.timezone || "Asia/Kolkata", s);
+  });
+  if (!campaigns.length) {
+    result.notes.push("Outside your sending hours");
+    return result;
+  }
+  const ownerIds = [...new Set(campaigns.map((c) => c.owner_id))];
 
   const { data: accountsRows } = await db.from("sending_accounts").select("*").in("owner_id", ownerIds);
   const accounts = new Map((accountsRows ?? []).map((a) => [a.id, a]));
@@ -186,6 +197,14 @@ export async function runSender(db: DB, opts: { ownerId?: string; maxSends?: num
     result.skipped += fu.skipped;
     result.failed += fu.failed;
     result.notes.push(...fu.notes);
+    slots -= fu.sent + fu.failed;
+  }
+
+  // 5. One check-in for people who said "not now, later" (when the campaign's rule is on).
+  if (slots > 0) {
+    const ci = await sendCheckIns(db, campaigns, accounts, accountSent, settings, slots, now);
+    result.sent += ci.sent;
+    result.failed += ci.failed;
   }
   return result;
 }
@@ -217,7 +236,7 @@ async function sendDueFollowUps(
   now: Date,
 ) {
   const out = { sent: 0, skipped: 0, failed: 0, notes: [] as string[] };
-  const withFollowUps = campaigns.filter((c) => c.follow_up_1_body.trim() || c.follow_up_2_body.trim() || c.follow_up_3_body.trim());
+  const withFollowUps = campaigns.filter((c) => parseFollowUps(c.follow_ups).length > 0);
   if (!withFollowUps.length) return out;
   const byId = new Map(withFollowUps.map((c) => [c.id, c]));
   const { data: rows } = await db
@@ -226,7 +245,7 @@ async function sendDueFollowUps(
     .in("campaign_id", [...byId.keys()])
     .eq("status", "sent")
     .gte("current_step", 1)
-    .lte("current_step", 3)
+    .lte("current_step", 8)
     .is("sequence_stopped_at", null)
     .lt("last_sent_at", new Date(now.getTime() - 86_400_000).toISOString())
     .order("last_sent_at", { ascending: true })
@@ -237,6 +256,7 @@ async function sendDueFollowUps(
     const campaign = byId.get(cl.campaign_id);
     if (!campaign) continue;
     const next = nextFollowUp(campaign, cl);
+    const behavior = parseBehavior(campaign.behavior);
     if (!next || next.dueAt > now) continue;
     const account = cl.sending_account_id ? accounts.get(cl.sending_account_id) : undefined;
     if (!account || account.status !== "active") continue;
@@ -260,14 +280,14 @@ async function sendDueFollowUps(
     const { data: lead } = await db.from("leads").select("*").eq("id", cl.lead_id).single();
     const { data: history } = await db
       .from("email_messages")
-      .select("direction, subject, rfc_message_id, gmail_thread_id, status")
+      .select("direction, subject, rfc_message_id, gmail_thread_id, status, reply_category")
       .eq("campaign_lead_id", cl.id)
       .order("created_at", { ascending: true });
     const stopReason = !lead
       ? "Lead removed"
       : DO_NOT_EMAIL_STATUSES.includes(lead.status)
         ? `Lead is ${lead.status}`
-        : (history ?? []).some((h) => h.direction === "inbound")
+        : (history ?? []).some((h) => h.direction === "inbound" && replyAction(h.reply_category, behavior) !== "continue")
           ? "They replied"
           : (history ?? []).some((h) => h.status === "bounced")
             ? "Bounced"
@@ -286,7 +306,7 @@ async function sendDueFollowUps(
     const { body } = composeEmail({
       subject: "",
       body: next.body,
-      signature: settings.get(campaign.owner_id)?.signature,
+      signature: pickSignature(account.signature, settings.get(campaign.owner_id)?.signature),
       lead: { ...lead, custom_fields: (lead.custom_fields ?? {}) as Record<string, unknown> },
       optOut: false,
     });
@@ -380,12 +400,14 @@ async function sendOne(
   const problem = await addressProblem(db, lead);
   if (problem) return skip(`Email check: ${problem}`);
 
+  const attachments = parseAttachments(campaign.attachments);
   const { subject, body } = composeEmail({
     subject: campaign.subject,
     body: campaign.body,
-    signature: settings?.signature,
+    signature: pickSignature(account.signature, settings?.signature),
     lead: { ...lead, custom_fields: (lead.custom_fields ?? {}) as Record<string, unknown> },
     optOut: true,
+    attachments,
   });
 
   // The unique (campaign_lead_id, step) index makes a second insert impossible -> no duplicates.
@@ -403,13 +425,16 @@ async function sendOne(
       subject,
       body,
       status: "pending",
+      attachments: attachments as unknown as Database["public"]["Tables"]["email_messages"]["Insert"]["attachments"],
     })
     .select("id")
     .single();
   if (insErr || !msg) return skip("Already sent (duplicate prevented)");
 
   try {
-    const sent = await sendFromAccount(account, { to: lead.email, subject, body });
+    const { loadAttachmentFiles } = await import("./attachments.server");
+    const files = await loadAttachmentFiles(db, attachments, campaign.owner_id);
+    const sent = await sendFromAccount(account, { to: lead.email, subject, body, attachments: files });
     const sentAt = new Date().toISOString();
     await db
       .from("email_messages")
@@ -429,4 +454,112 @@ async function sendOne(
     await markAccountError(db, account, err);
     return "failed";
   }
+}
+
+/** Check-in step number in email_messages (keeps it apart from follow-ups 1–8). */
+export const CHECK_IN_STEP = 99;
+
+async function sendCheckIns(
+  db: DB,
+  campaigns: Campaign[],
+  accounts: Map<string, Account>,
+  accountSent: Map<string, number>,
+  settings: Map<string, Settings>,
+  slots: number,
+  now: Date,
+) {
+  const out = { sent: 0, failed: 0 };
+  const eligible = campaigns.filter((c) => {
+    const b = parseBehavior(c.behavior);
+    return b.later_check_in && b.later_body.trim();
+  });
+  if (!eligible.length) return out;
+  const byId = new Map(eligible.map((c) => [c.id, c]));
+  const { data: rows } = await db
+    .from("campaign_leads")
+    .select("id, campaign_id, lead_id, sending_account_id, gmail_thread_id")
+    .in("campaign_id", [...byId.keys()])
+    .not("sequence_stopped_at", "is", null)
+    .is("nurture_sent_at", null)
+    .limit(200);
+  for (const cl of rows ?? []) {
+    if (slots <= 0) break;
+    const campaign = byId.get(cl.campaign_id);
+    if (!campaign) continue;
+    const b = parseBehavior(campaign.behavior);
+    const { data: msgs } = await db
+      .from("email_messages")
+      .select("direction, subject, rfc_message_id, reply_category, sent_at, created_at")
+      .eq("campaign_lead_id", cl.id)
+      .order("created_at", { ascending: true });
+    const inbound = (msgs ?? []).filter((m) => m.direction === "inbound");
+    const lastIn = inbound[inbound.length - 1];
+    // Only when every reply so far is a "later" (or out-of-office) reply.
+    if (!lastIn || lastIn.reply_category !== "follow_up_later") continue;
+    if (inbound.some((m) => m.reply_category !== "follow_up_later" && m.reply_category !== "out_of_office")) continue;
+    const at = new Date(lastIn.sent_at ?? lastIn.created_at);
+    if (at.getTime() + b.later_delay_days * 86_400_000 > now.getTime()) continue;
+    const account = cl.sending_account_id ? accounts.get(cl.sending_account_id) : undefined;
+    if (!account || account.status !== "active" || (accountSent.get(account.id) ?? 0) >= account.daily_limit) continue;
+    const { data: lead } = await db.from("leads").select("*").eq("id", cl.lead_id).single();
+    if (!lead || DO_NOT_EMAIL_STATUSES.includes(lead.status)) {
+      await db.from("campaign_leads").update({ nurture_sent_at: now.toISOString() }).eq("id", cl.id);
+      continue;
+    }
+    // Claim first so two runs never both send it.
+    const { data: claimed } = await db
+      .from("campaign_leads")
+      .update({ nurture_sent_at: new Date().toISOString() })
+      .eq("id", cl.id)
+      .is("nurture_sent_at", null)
+      .select("id");
+    if (!claimed?.length) continue;
+    slots--;
+    accountSent.set(account.id, (accountSent.get(account.id) ?? 0) + 1);
+    const first = (msgs ?? []).find((m) => m.direction === "outbound");
+    const refs = (msgs ?? []).map((m) => m.rfc_message_id).filter((x): x is string => !!x);
+    const { body } = composeEmail({
+      subject: "",
+      body: b.later_body,
+      signature: pickSignature(account.signature, settings.get(campaign.owner_id)?.signature),
+      lead: { ...lead, custom_fields: (lead.custom_fields ?? {}) as Record<string, unknown> },
+    });
+    const subject = replySubject(first?.subject || campaign.subject);
+    const { data: msg, error } = await db
+      .from("email_messages")
+      .insert({
+        owner_id: lead.owner_id,
+        lead_id: lead.id,
+        campaign_id: campaign.id,
+        campaign_lead_id: cl.id,
+        step: CHECK_IN_STEP,
+        sending_account_id: account.id,
+        to_email: lead.email,
+        from_email: account.email,
+        subject,
+        body,
+        status: "pending",
+        in_reply_to: refs[refs.length - 1] ?? null,
+        gmail_thread_id: cl.gmail_thread_id,
+      })
+      .select("id")
+      .single();
+    if (error || !msg) continue;
+    try {
+      const sent = await sendFromAccount(account, { to: lead.email, subject, body, inReplyTo: refs[refs.length - 1], references: refs, threadKey: cl.gmail_thread_id });
+      const sentAt = new Date().toISOString();
+      await db
+        .from("email_messages")
+        .update({ status: "sent", sent_at: sentAt, rfc_message_id: sent.rfcMessageId, gmail_message_id: sent.providerMessageId, gmail_thread_id: sent.threadKey })
+        .eq("id", msg.id);
+      await db.from("leads").update({ last_contacted_at: sentAt }).eq("id", lead.id);
+      out.sent++;
+    } catch (e) {
+      const err = e instanceof GmailError ? e : new GmailError(String((e as Error)?.message ?? e), 0, "other");
+      await db.from("email_messages").update({ status: "failed", error: err.message }).eq("id", msg.id);
+      await markAccountError(db, account, err);
+      out.failed++;
+    }
+  }
+  return out;
 }
