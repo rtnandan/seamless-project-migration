@@ -183,16 +183,17 @@ export const suppressionsQuery = () =>
       ok(await supabase.from("suppressions").select("*").order("created_at", { ascending: false }).limit(1000)),
   });
 
-export type InboxSearch = { filter?: string | undefined; campaign?: string | undefined; thread?: string | undefined };
+export type InboxSearch = { filter?: string | undefined; campaign?: string | undefined; thread?: string | undefined; status?: string | undefined };
 
-export const inboxThreadsQuery = (s: Pick<InboxSearch, "filter" | "campaign">) =>
+export const inboxThreadsQuery = (s: Pick<InboxSearch, "filter" | "campaign" | "status">) =>
   queryOptions({
-    queryKey: ["inbox", s.filter ?? "all", s.campaign ?? "all"],
+    queryKey: ["inbox", s.filter ?? "all", s.campaign ?? "all", s.status ?? "open"],
     queryFn: async () =>
       ok(
         await supabase.rpc("get_inbox_threads", {
           ...(s.filter ? { _filter: s.filter } : {}),
           ...(s.campaign ? { _campaign_id: s.campaign } : {}),
+          _status: s.status ?? "open",
           _limit: 300,
         }),
       ),
@@ -205,7 +206,7 @@ export const threadQuery = (threadId: string) =>
       ok(
         await supabase
           .from("email_messages")
-          .select("id, direction, is_manual, step, from_email, to_email, cc, subject, body, status, error, sent_at, created_at, reply_category, reply_summary, lead_id, campaign_id, sending_account_id, read_at, campaigns(name)")
+          .select("id, direction, is_manual, step, from_email, to_email, cc, subject, body, status, error, sent_at, created_at, reply_category, reply_summary, lead_id, campaign_id, sending_account_id, read_at, attachments, campaigns(name)")
           .eq("gmail_thread_id", threadId)
           .eq("is_test", false)
           .order("created_at", { ascending: true }),
@@ -253,13 +254,26 @@ export const upcomingFollowUpsQuery = () =>
         await supabase
           .from("campaign_leads")
           .select(
-            "id, current_step, last_sent_at, sequence_stopped_at, gmail_thread_id, campaign_id, leads(id, email, first_name, last_name, company, status), campaigns!inner(id, name, status, follow_up_1_body, follow_up_1_delay_days, follow_up_2_body, follow_up_2_delay_days, follow_up_3_body, follow_up_3_delay_days), sending_accounts(email)",
+            "id, current_step, last_sent_at, sequence_stopped_at, gmail_thread_id, campaign_id, leads(id, email, first_name, last_name, company, status), campaigns!inner(id, name, status, follow_ups), sending_accounts(email)",
           )
           .eq("status", "sent")
           .gte("current_step", 1)
-          .lte("current_step", 3)
+          .lte("current_step", 8)
           .is("sequence_stopped_at", null)
           .order("last_sent_at", { ascending: true })
           .limit(500),
       ),
+  });
+
+export const templatesQuery = () =>
+  queryOptions({
+    queryKey: ["templates"],
+    queryFn: async () => ok(await supabase.from("templates").select("*").order("updated_at", { ascending: false })),
+  });
+
+export const campaignsLiteQuery = () =>
+  queryOptions({
+    queryKey: ["campaigns-lite"],
+    queryFn: async () =>
+      ok(await supabase.from("campaigns").select("id, name, status, subject, follow_ups, behavior, updated_at").order("created_at", { ascending: false })),
   });

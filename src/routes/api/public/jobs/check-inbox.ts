@@ -14,7 +14,9 @@ export const Route = createFileRoute("/api/public/jobs/check-inbox")({
           const { syncReplies } = await import("@/lib/replies.server");
           const bounces = await processBounces(supabaseAdmin);
           const replies = await syncReplies(supabaseAdmin);
-          return Response.json({ ok: true, bounced: bounces.bounced, ...replies, notes: [...bounces.notes, ...replies.notes] });
+          // Close conversations with no activity for each owner's "auto-close after" days.
+          const { data: closed } = await supabaseAdmin.rpc("close_inactive_conversations");
+          return Response.json({ ok: true, bounced: bounces.bounced, closed: closed ?? 0, ...replies, notes: [...bounces.notes, ...replies.notes] });
         } catch (e) {
           console.error("check-inbox failed", e);
           return Response.json({ ok: false, error: (e as Error).message }, { status: 500 });
