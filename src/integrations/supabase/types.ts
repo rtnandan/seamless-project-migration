@@ -48,31 +48,43 @@ export type Database = {
       }
       app_settings: {
         Row: {
+          ai_context: string
           app_url: string | null
           auto_close_days: number
           created_at: string
           first_campaign_approved_at: string | null
           owner_id: string
+          send_end_hour: number
+          send_start_hour: number
+          send_weekdays_only: boolean
           signature: string
           timezone: string
           updated_at: string
         }
         Insert: {
+          ai_context?: string
           app_url?: string | null
           auto_close_days?: number
           created_at?: string
           first_campaign_approved_at?: string | null
           owner_id: string
+          send_end_hour?: number
+          send_start_hour?: number
+          send_weekdays_only?: boolean
           signature?: string
           timezone?: string
           updated_at?: string
         }
         Update: {
+          ai_context?: string
           app_url?: string | null
           auto_close_days?: number
           created_at?: string
           first_campaign_approved_at?: string | null
           owner_id?: string
+          send_end_hour?: number
+          send_start_hour?: number
+          send_weekdays_only?: boolean
           signature?: string
           timezone?: string
           updated_at?: string
@@ -390,6 +402,8 @@ export type Database = {
       }
       leads: {
         Row: {
+          ai_line: string | null
+          ai_line_at: string | null
           company: string
           created_at: string
           custom_fields: Json
@@ -407,10 +421,13 @@ export type Database = {
           owner_id: string
           source: string
           status: string
+          tags: string[]
           unsubscribe_token: string
           updated_at: string
         }
         Insert: {
+          ai_line?: string | null
+          ai_line_at?: string | null
           company?: string
           created_at?: string
           custom_fields?: Json
@@ -428,10 +445,13 @@ export type Database = {
           owner_id?: string
           source?: string
           status?: string
+          tags?: string[]
           unsubscribe_token?: string
           updated_at?: string
         }
         Update: {
+          ai_line?: string | null
+          ai_line_at?: string | null
           company?: string
           created_at?: string
           custom_fields?: Json
@@ -449,6 +469,7 @@ export type Database = {
           owner_id?: string
           source?: string
           status?: string
+          tags?: string[]
           unsubscribe_token?: string
           updated_at?: string
         }
