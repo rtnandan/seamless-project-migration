@@ -14,6 +14,38 @@ export type Database = {
   }
   public: {
     Tables: {
+      account_credentials: {
+        Row: {
+          account_id: string
+          created_at: string
+          owner_id: string
+          password_enc: string
+          updated_at: string
+        }
+        Insert: {
+          account_id: string
+          created_at?: string
+          owner_id: string
+          password_enc: string
+          updated_at?: string
+        }
+        Update: {
+          account_id?: string
+          created_at?: string
+          owner_id?: string
+          password_enc?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "account_credentials_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: true
+            referencedRelation: "sending_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       app_settings: {
         Row: {
           app_url: string | null
@@ -200,6 +232,7 @@ export type Database = {
           body: string
           campaign_id: string | null
           campaign_lead_id: string | null
+          cc: string
           created_at: string
           direction: string
           error: string | null
@@ -207,9 +240,12 @@ export type Database = {
           gmail_message_id: string | null
           gmail_thread_id: string | null
           id: string
+          in_reply_to: string | null
+          is_manual: boolean
           is_test: boolean
           lead_id: string | null
           owner_id: string
+          read_at: string | null
           reply_category: string | null
           reply_summary: string | null
           rfc_message_id: string | null
@@ -224,6 +260,7 @@ export type Database = {
           body?: string
           campaign_id?: string | null
           campaign_lead_id?: string | null
+          cc?: string
           created_at?: string
           direction?: string
           error?: string | null
@@ -231,9 +268,12 @@ export type Database = {
           gmail_message_id?: string | null
           gmail_thread_id?: string | null
           id?: string
+          in_reply_to?: string | null
+          is_manual?: boolean
           is_test?: boolean
           lead_id?: string | null
           owner_id?: string
+          read_at?: string | null
           reply_category?: string | null
           reply_summary?: string | null
           rfc_message_id?: string | null
@@ -248,6 +288,7 @@ export type Database = {
           body?: string
           campaign_id?: string | null
           campaign_lead_id?: string | null
+          cc?: string
           created_at?: string
           direction?: string
           error?: string | null
@@ -255,9 +296,12 @@ export type Database = {
           gmail_message_id?: string | null
           gmail_thread_id?: string | null
           id?: string
+          in_reply_to?: string | null
+          is_manual?: boolean
           is_test?: boolean
           lead_id?: string | null
           owner_id?: string
+          read_at?: string | null
           reply_category?: string | null
           reply_summary?: string | null
           rfc_message_id?: string | null
@@ -306,6 +350,9 @@ export type Database = {
           custom_fields: Json
           designation: string
           email: string
+          email_check: string
+          email_check_reason: string | null
+          email_checked_at: string | null
           first_name: string
           id: string
           industry: string
@@ -324,6 +371,9 @@ export type Database = {
           custom_fields?: Json
           designation?: string
           email: string
+          email_check?: string
+          email_check_reason?: string | null
+          email_checked_at?: string | null
           first_name?: string
           id?: string
           industry?: string
@@ -342,6 +392,9 @@ export type Database = {
           custom_fields?: Json
           designation?: string
           email?: string
+          email_check?: string
+          email_check_reason?: string | null
+          email_checked_at?: string | null
           first_name?: string
           id?: string
           industry?: string
@@ -360,41 +413,77 @@ export type Database = {
         Row: {
           created_at: string
           daily_limit: number
+          dkim_selector: string | null
+          dns_check: Json | null
+          dns_checked_at: string | null
           email: string
           from_name: string
           id: string
+          imap_host: string | null
+          imap_last_uid: number | null
+          imap_port: number | null
+          imap_uidvalidity: number | null
           last_checked_at: string | null
           last_error: string | null
           owner_id: string
+          provider: string
+          provider_label: string
           secret_name: string
+          smtp_host: string | null
+          smtp_port: number | null
           status: string
           updated_at: string
+          username: string | null
         }
         Insert: {
           created_at?: string
           daily_limit?: number
+          dkim_selector?: string | null
+          dns_check?: Json | null
+          dns_checked_at?: string | null
           email: string
           from_name?: string
           id?: string
+          imap_host?: string | null
+          imap_last_uid?: number | null
+          imap_port?: number | null
+          imap_uidvalidity?: number | null
           last_checked_at?: string | null
           last_error?: string | null
           owner_id?: string
+          provider?: string
+          provider_label?: string
           secret_name: string
+          smtp_host?: string | null
+          smtp_port?: number | null
           status?: string
           updated_at?: string
+          username?: string | null
         }
         Update: {
           created_at?: string
           daily_limit?: number
+          dkim_selector?: string | null
+          dns_check?: Json | null
+          dns_checked_at?: string | null
           email?: string
           from_name?: string
           id?: string
+          imap_host?: string | null
+          imap_last_uid?: number | null
+          imap_port?: number | null
+          imap_uidvalidity?: number | null
           last_checked_at?: string | null
           last_error?: string | null
           owner_id?: string
+          provider?: string
+          provider_label?: string
           secret_name?: string
+          smtp_host?: string | null
+          smtp_port?: number | null
           status?: string
           updated_at?: string
+          username?: string | null
         }
         Relationships: []
       }
