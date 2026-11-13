@@ -152,7 +152,7 @@ export async function saveInbound(
 async function classifyPending(db: DB, opts: { ownerId?: string | undefined; limit: number; notes: string[] }): Promise<number> {
   let q = db
     .from("email_messages")
-    .select("id, owner_id, lead_id, from_email, subject, body, gmail_thread_id")
+    .select("id, owner_id, lead_id, from_email, subject, body, gmail_thread_id, campaign_lead_id, campaign_id")
     .eq("direction", "inbound")
     .is("reply_category", null)
     .order("sent_at", { ascending: true })
@@ -174,6 +174,7 @@ async function classifyPending(db: DB, opts: { ownerId?: string | undefined; lim
       const { category, summary } = await classifyReply({ subject: r.subject, reply: r.body, originalSubject: original?.subject });
       await db.from("email_messages").update({ reply_category: category, reply_summary: summary }).eq("id", r.id);
       if (r.lead_id) await applyCategory(db, { owner_id: r.owner_id, lead_id: r.lead_id, email: r.from_email }, category);
+      if (category === "out_of_office" && r.campaign_lead_id && r.campaign_id) await resumeAfterAutoReply(db, r.campaign_id, r.campaign_lead_id);
       done++;
     } catch (e) {
       const err = e as InstanceType<typeof AiUnavailableError>;
@@ -209,4 +210,18 @@ export async function applyCategory(
   }
   const next = nextLeadStatus(lead.status, category, manual);
   if (next !== lead.status) await db.from("leads").update({ status: next }).eq("id", who.lead_id);
+}
+
+/** An out-of-office auto-reply doesn't end the sequence when the campaign's rule says "continue". */
+async function resumeAfterAutoReply(db: DB, campaignId: string, campaignLeadId: string) {
+  const { parseBehavior, replyAction } = await import("./followups");
+  const { data: c } = await db.from("campaigns").select("behavior").eq("id", campaignId).maybeSingle();
+  if (!c || replyAction("out_of_office", parseBehavior(c.behavior)) !== "continue") return;
+  const { data: others } = await db
+    .from("email_messages")
+    .select("reply_category")
+    .eq("campaign_lead_id", campaignLeadId)
+    .eq("direction", "inbound");
+  if ((others ?? []).some((o) => o.reply_category !== "out_of_office")) return;
+  await db.from("campaign_leads").update({ sequence_stopped_at: null }).eq("id", campaignLeadId);
 }

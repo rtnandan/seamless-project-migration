@@ -44,6 +44,7 @@ export type LeadLike = {
   designation?: string | null;
   industry?: string | null;
   custom_fields?: Record<string, unknown> | null;
+  ai_line?: string | null;
 };
 
 export const STANDARD_VARIABLES = [
@@ -53,6 +54,7 @@ export const STANDARD_VARIABLES = [
   "designation",
   "industry",
   "email",
+  "ai_line",
 ] as const;
 
 const VAR_RE = /\{\{\s*([a-zA-Z0-9_]+)\s*(?:\|\s*([^}]*?)\s*)?\}\}/g;
