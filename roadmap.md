@@ -1,0 +1,8 @@
+- [x] Move app code, database structure, privacy rules, Gmail and schedules into this project.
+- [x] Verify tests, sign-in, main screens, unsubscribe, and account privacy.
+- [ ] Import existing records and users (waiting on exports from the original app).
+- [x] Add any mailbox (Zoho, GoDaddy, Gmail, Outlook, other) as a sending account, with SPF/DKIM/DMARC checks.
+- [x] Inbox with one-to-one and bulk replies, showing the campaign.
+- [x] Sent page, follow-up sequences, and email verification before sending.
+- [ ] Publish so the scheduled jobs and unsubscribe links run on the live address.
+- [ ] Switch users over from runmeth.lovable.app after data import.
